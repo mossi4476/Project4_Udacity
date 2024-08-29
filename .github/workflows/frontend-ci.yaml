@@ -1,0 +1,89 @@
+name: frontend-continuous-integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: v18.18.0
+  IMAGE_REPO_NAME: frontend
+
+jobs:
+  lint:
+    name: Run lint frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./starter/frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Nodejs environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{env.NODE_VERSION}}
+      
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install prettier@2.8.8 --save-dev
+        
+      - name: Run lint
+        run: |
+          npm run lint
+      
+  test:
+    name: Run test frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./starter/frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Nodejs environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{env.NODE_VERSION}}
+      
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install prettier@2.8.8 --save-dev
+      
+      - name: Run test
+        run: |
+          npm run test
+  
+  build:
+    name: Build docker image
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./starter/frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build docker image
+        run: |
+          docker build -t ${{env.IMAGE_REPO_NAME}} .
